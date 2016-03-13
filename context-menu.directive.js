@@ -43,63 +43,58 @@ function contextMenu($parse, $q) {
             top: event.pageY + 'px',
             "z-index": 10000
         });
-        angular.forEach(options, function(item, i) {
+        angular.forEach(options, (items, i) => {
             var $li = $('<li>');
-            if (item === null) {
+            if (items === null) {
                 $li.addClass('divider');
             } else {
-                var nestedMenu = angular.isArray(item[1])
-                    ? item[1] : angular.isArray(item[2])
-                    ? item[2] : angular.isArray(item[3])
-                    ? item[3] : null;
-                var $a = $('<a>');
-                $a.css("padding-right", "8px");
-                $a.attr({tabindex: '-1', href: '#'});
-                var text = item && item[0] && typeof item[0] == 'string' ? item[0] : item[0].call($scope, $scope, event, model);
-                $q.when(text).then(function(text) {
-                    $a.text(text);
-                    if (nestedMenu) {
-                        $a.css("cursor", "default");
-                        $a.append($('<strong style="font-family:monospace;font-weight:bold;float:right;">&gt;</strong>'));
-                    }
-                });
-                $li.append($a);
-
-                var enabled = angular.isFunction(item[2]) ? item[2].call($scope, $scope, event, model, text) : true;
-                if (enabled) {
-                    var openNestedMenu = function($event) {
-                        removeContextMenus(level + 1);
-                        var ev = {
-                            pageX: event.pageX + $ul[0].offsetWidth - 1,
-                            pageY: $ul[0].offsetTop + $li[0].offsetTop - 3
+                angular.forEach(items, (item, name) => {
+                    var nestedMenu = item.children || false;
+                        var openNestedMenu = function($event) {
+                            removeContextMenus(level + 1);
+                            var ev = {
+                                pageX: event.pageX + $ul[0].offsetWidth - 1,
+                                pageY: $ul[0].offsetTop + $li[0].offsetTop - 3
+                            };
+                            renderContextMenu($scope, ev, item.children, model, level + 1);
                         };
-                        renderContextMenu($scope, ev, nestedMenu, model, level + 1);
-                    };
-                    $li.on('click', function($event) {
-                        //$event.preventDefault();
-                        $scope.$apply(function() {
-                            if (nestedMenu) {
-                                openNestedMenu($event);
-                            } else {
-                                $(event.currentTarget).removeClass('context');
-                                removeContextMenus();
-                                item[1].call($scope, $scope, event, model);
-                            }
+                        $li.on('click', function($event) {
+                            //$event.preventDefault();
+                            $scope.$apply(() => {
+                                if (nestedMenu) {
+                                    openNestedMenu($event);
+                                } else {
+                                    $(event.currentTarget).removeClass('context');
+                                    removeContextMenus();
+                                    item.action.call($scope, $scope, event, model);
+                                }
+                            });
                         });
+                        $li.on('mouseover', function($event) {
+                           $scope.$apply(function() {
+                               if (nestedMenu) {
+                                   openNestedMenu($event);
+                               }
+                           });
+                        });
+
+                    var $a = $('<a>');
+                    $a.css("padding-right", "8px");
+                    $a.attr({tabindex: '-1', href: '#'});
+                    var text = name;
+                    $q.when(text).then(function(text) {
+                        $a.text(text);
+                        if (nestedMenu) {
+                            $a.css("cursor", "default");
+                            $a.append($('<strong style="font-family:monospace;font-weight:bold;float:right;">&gt;</strong>'));
+                        }
+                        if(item.disable){
+                            $a.css("cursor", "disabled");
+                        }
+
                     });
-                    $li.on('mouseover', function($event) {
-                       $scope.$apply(function() {
-                           if (nestedMenu) {
-                               openNestedMenu($event);
-                           }
-                       });
-                    });
-                } else {
-                    $li.on('click', function($event) {
-                        $event.preventDefault();
-                    });
-                    $li.addClass('disabled');
-                }
+                    $li.append($a);
+                });
             }
             $ul.append($li);
         });
