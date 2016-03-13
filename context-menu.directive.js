@@ -18,7 +18,7 @@ function contextMenu($parse, $q) {
 
     var $currentContextMenu = null;
 
-    var renderContextMenu = function($scope, event, options, model, level) {
+    var renderContextMenu = function($scope, event, options, model, disabledFunc, itemName, level) {
         if (!level) {
             level = 0;
         }
@@ -43,58 +43,57 @@ function contextMenu($parse, $q) {
             top: event.pageY + 'px',
             "z-index": 10000
         });
-        angular.forEach(options, (items, i) => {
+        angular.forEach(options, (item, i) => {
             var $li = $('<li>');
-            if (items === null) {
+            if (item === null) {
                 $li.addClass('divider');
             } else {
-                angular.forEach(items, (item, name) => {
-                    var nestedMenu = item.children || false;
-                        var openNestedMenu = function($event) {
-                            removeContextMenus(level + 1);
-                            var ev = {
-                                pageX: event.pageX + $ul[0].offsetWidth - 1,
-                                pageY: $ul[0].offsetTop + $li[0].offsetTop - 3
-                            };
-                            renderContextMenu($scope, ev, item.children, model, level + 1);
-                        };
-                        $li.on('click', function($event) {
-                            //$event.preventDefault();
-                            $scope.$apply(() => {
-                                if (nestedMenu) {
-                                    openNestedMenu($event);
-                                } else {
-                                    $(event.currentTarget).removeClass('context');
-                                    removeContextMenus();
-                                    item.action.call($scope, $scope, event, model);
-                                }
-                            });
-                        });
-                        $li.on('mouseover', function($event) {
-                           $scope.$apply(function() {
-                               if (nestedMenu) {
-                                   openNestedMenu($event);
-                               }
-                           });
-                        });
-
-                    var $a = $('<a>');
-                    $a.css("padding-right", "8px");
-                    $a.attr({tabindex: '-1', href: '#'});
-                    var text = name;
-                    $q.when(text).then(function(text) {
-                        $a.text(text);
+                var nestedMenu = item.children || false;
+                var openNestedMenu = function($event) {
+                    removeContextMenus(level + 1);
+                    var ev = {
+                        pageX: event.pageX + $ul[0].offsetWidth - 1,
+                        pageY: $ul[0].offsetTop + $li[0].offsetTop - 3
+                    };
+                    renderContextMenu($scope, ev, item.children, model, disabledFunc, itemName, level + 1);
+                };
+                $li.on('click', function($event) {
+                    //$event.preventDefault();
+                    $scope.$apply(() => {
                         if (nestedMenu) {
-                            $a.css("cursor", "default");
-                            $a.append($('<strong style="font-family:monospace;font-weight:bold;float:right;">&gt;</strong>'));
+                            openNestedMenu($event);
+                        } else {
+                            if(item.disable !== false){
+                                $(event.currentTarget).removeClass('context');
+                                removeContextMenus();
+                                item.action.call($scope, itemName, event);
+                            }
                         }
-                        if(item.disable){
-                            $a.css("cursor", "disabled");
-                        }
-
                     });
-                    $li.append($a);
                 });
+                $li.on('mouseover', function($event) {
+                    $scope.$apply(function() {
+                        if (nestedMenu) {
+                            openNestedMenu($event);
+                        }
+                    });
+                });
+
+                var $a = $('<a>');
+                $a.css("padding-right", "8px");
+                $a.attr({tabindex: '-1', href: '#'});
+                var text = item.displayName;
+                $q.when(text).then(function(text) {
+                    $a.text(text);
+                    if (nestedMenu) {
+                        $a.css("cursor", "default");
+                        $a.append($('<strong style="font-family:monospace;font-weight:bold;float:right;">&gt;</strong>'));
+                    }
+                });
+                if(item.disable || disabledFunc(item)){
+                    $li.addClass('disabled');
+                }
+                $li.append($a);
             }
             $ul.append($li);
         });
@@ -131,22 +130,29 @@ function contextMenu($parse, $q) {
 
         contextMenus.push($ul);
     };
-    return function($scope, element, attrs) {
-        element.on('contextmenu', function(event) {
-            event.stopPropagation();
-            $scope.$apply(function() {
-                event.preventDefault();
-                var options = $scope.$eval(attrs.contextMenu);
-                var model = $scope.$eval(attrs.model);
-                if (options instanceof Array) {
-                    if (options.length === 0) {
-                        return;
+    return {
+        restrict: 'A',
+        scope: {
+            contextMenu: '=',
+            itemName: '=',
+            disabledFunc:'&'
+        },
+        link: function($scope, element, attrs) {
+            element.on('contextmenu', function(event) {
+                event.stopPropagation();
+                $scope.$apply(function() {
+                    event.preventDefault();
+                    var model = $scope.$eval(attrs.model);
+                    if ($scope.contextMenu instanceof Object) {
+                        if ($scope.contextMenu.length === 0) {
+                            return;
+                        }
+                        renderContextMenu($scope, event, $scope.contextMenu, model, $scope.disabledFunc, $scope.itemName);
+                    } else {
+                        throw '"' + attrs.contextMenu + '" not an object';
                     }
-                    renderContextMenu($scope, event, options, model);
-                } else {
-                    throw '"' + attrs.contextMenu + '" not an array';
-                }
+                });
             });
-        });
+        }
     };
 };
