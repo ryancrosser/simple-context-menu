@@ -1,0 +1,11 @@
+{
+  "name": "simple-context-menu",
+  "version": "0.0.1",
+  "description": "Simple context menu for angular",
+  "main": "context-menu.directive.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ryan Crosser <Crosser_Ryan@bah.com>",
+  "license": "MIT"
+}
