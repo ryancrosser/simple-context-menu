@@ -55,8 +55,6 @@ function contextMenu($parse, $q) {
                 var $a = $('<a>');
                 $a.css("padding-right", "8px");
                 $a.attr({tabindex: '-1', href: '#'});
-
-                console.log(123)
                 var text = item && item[0] && typeof item[0] == 'string' ? item[0] : item[0].call($scope, $scope, event, model);
                 $q.when(text).then(function(text) {
                     $a.text(text);
@@ -75,7 +73,6 @@ function contextMenu($parse, $q) {
                             pageX: event.pageX + $ul[0].offsetWidth - 1,
                             pageY: $ul[0].offsetTop + $li[0].offsetTop - 3
                         };
-                        debugger
                         renderContextMenu($scope, ev, nestedMenu, model, level + 1);
                     };
                     $li.on('click', function($event) {
@@ -140,7 +137,6 @@ function contextMenu($parse, $q) {
         contextMenus.push($ul);
     };
     return function($scope, element, attrs) {
-        console.log($scope, element, attrs)
         element.on('contextmenu', function(event) {
             event.stopPropagation();
             $scope.$apply(function() {
