@@ -43,7 +43,7 @@ function contextMenu($parse, $q) {
             top: event.pageY + 'px',
             "z-index": 10000
         });
-        angular.forEach(options, (item, i) => {
+        angular.forEach(options, function (item, i) {
             var $li = $('<li>');
             if (item === null) {
                 $li.addClass('divider');
@@ -59,7 +59,7 @@ function contextMenu($parse, $q) {
                 };
                 $li.on('click', function($event) {
                     //$event.preventDefault();
-                    $scope.$apply(() => {
+                    $scope.$apply(function() {
                         if (nestedMenu) {
                             openNestedMenu($event);
                         } else {
